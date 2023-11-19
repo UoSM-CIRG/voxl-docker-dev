@@ -24,7 +24,7 @@ adb push rosnoetic-focal-v1.0.tar /data
 adb push mavros_test /home/root
 ```
 
-Navigate to the directory of the '.tar' file and load the Docker image. Configure the Docker service beforehand with `voxl-configure-docker-support` if necessary.
+In your host PC, access the voxl device either by SSH or ADB and navigate to the directory of the '.tar' file and load the Docker image. Configure the Docker service beforehand with `voxl-configure-docker-support` if necessary.
 
 ```
 cd /data
