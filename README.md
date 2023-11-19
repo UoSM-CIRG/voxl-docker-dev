@@ -20,8 +20,8 @@ sudo ./build-docker.sh
 Then transfer the following two files to the voxl. Make sure you are connected to the voxl device by ADB shell. Alternatively can use scp to transfer the file.
 How to setup ADB can be found at https://docs.modalai.com/setting-up-adb/
 ```
-adb push rosnoetic-focal-v1.0.tar /data
-adb push mavros_test /home/root
+sudo adb push rosnoetic-focal-v1.0.tar /data
+sudo adb push mavros_test /home/root
 ```
 
 In your host PC, access the voxl device either by SSH or ADB and navigate to the directory of the '.tar' file and load the Docker image. Configure the Docker service beforehand with `voxl-configure-docker-support` if necessary.
