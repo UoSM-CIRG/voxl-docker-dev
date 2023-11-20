@@ -3,12 +3,16 @@
 
 # load main ros environment
 if [ -f /opt/ros/noetic/setup.bash ]; then
+    echo "Sourcing ROS Noetic"
     source /opt/ros/noetic/setup.bash
 elif [ -f /opt/ros/melodic/setup.bash ]; then
+    echo "Sourcing ROS Melodic"
     source /opt/ros/melodic/setup.bash
 elif [ -f /opt/ros/kinetic/setup.bash ]; then
+    echo "Sourcing ROS Kinetic"
     source /opt/ros/kinetic/setup.bash
 elif [ -f /opt/ros/indigo/setup.bash ]; then
+    echo "Sourcing ROS Indigo"
     source /opt/ros/indigo/setup.bash
 fi
 
