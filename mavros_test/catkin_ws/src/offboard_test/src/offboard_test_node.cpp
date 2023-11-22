@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 
     ros::Time last_request = ros::Time::now();
 
-    while (ros::ok() && pose.pose.position.z > 0.5)
+    while (ros::ok() && pose.pose.position.z > 1.0)
     {
         if (current_state.mode != "OFFBOARD" &&
             (ros::Time::now() - last_request > ros::Duration(5.0)))
@@ -85,41 +85,6 @@ int main(int argc, char **argv)
             }
         }
         pose.pose.position.z -= 0.01;
-        local_pos_pub.publish(pose);
-        ros::spinOnce();
-        rate.sleep();
-
-        // Move to x=1, y=0
-        pose.pose.position.x = 0.3;
-        pose.pose.position.y = 0.0;
-        local_pos_pub.publish(pose);
-        ros::spinOnce();
-        rate.sleep();
-
-        // Move to x=1, y=1
-        pose.pose.position.x = 0.3;
-        pose.pose.position.y = 0.3;
-        local_pos_pub.publish(pose);
-        ros::spinOnce();
-        rate.sleep();
-
-        // Move to x=-1, y=1
-        pose.pose.position.x = -0.3;
-        pose.pose.position.y = 0.3;
-        local_pos_pub.publish(pose);
-        ros::spinOnce();
-        rate.sleep();
-
-        // Move to x=-1, y=-1
-        pose.pose.position.x = -0.3;
-        pose.pose.position.y = -0.3;
-        local_pos_pub.publish(pose);
-        ros::spinOnce();
-        rate.sleep();
-
-        // Move to x=1, y=-1
-        pose.pose.position.x = 0.3;
-        pose.pose.position.y = -0.3;
         local_pos_pub.publish(pose);
         ros::spinOnce();
         rate.sleep();
