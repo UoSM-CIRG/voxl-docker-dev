@@ -7,8 +7,7 @@ This project provides Dockerfiles and instructions for building Robot Operating 
 To get started with VOXL-Docker-Dev, follow these steps:
 
 ```
-git clone https://github.com/UoSM-CIRG/voxl-docker-dev.git --recursive
-git submodule update --init --recursive
+git clone https://github.com/UoSM-CIRG/voxl-docker-dev.git
 cd voxl-docker-dev/ros1_noetic
 ```
 
