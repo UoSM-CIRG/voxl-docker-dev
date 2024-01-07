@@ -38,6 +38,8 @@ int main(int argc, char *argv[])
     // The setpoint publishing rate MUST be faster than 20 Hz
     rclcpp::Rate rate(20.0);
 
+    RCLCPP_INFO(node->get_logger(), "Waiting FCU connection");
+
     // Wait for FCU connection
     while (rclcpp::ok() && !current_state.connected)
     {
@@ -52,6 +54,7 @@ int main(int argc, char *argv[])
     pose.pose.position.z = 1.5;
     pose.pose.orientation = tf2::toMsg(tf2::Quaternion(0, 0, 0, 1)); // No rotation (yaw = 0)
 
+    RCLCPP_INFO(node->get_logger(), "Sending Setpoints");
     // Send a few setpoints before starting
     for (int i = 100; rclcpp::ok() && i > 0; --i)
     {
@@ -75,45 +78,53 @@ int main(int argc, char *argv[])
         if (current_state.mode != "OFFBOARD" &&
             (node->now() - last_request) > rclcpp::Duration(5, 0))
         {
-            if (set_mode_client->wait_for_service(std::chrono::seconds(1)))
+            if (set_mode_client->wait_for_service(std::chrono::seconds(5)))
             {
-                if (set_mode_client->async_send_request(
-                                       std::make_shared<mavros_msgs::srv::SetMode::Request>(offb_set_mode),
-                                       [](rclcpp::Client<mavros_msgs::srv::SetMode>::SharedFuture) {})
-                        .get())
-                {
-                    RCLCPP_INFO(node->get_logger(), "OFFBOARD mode set");
-                }
-                else
-                {
-                    RCLCPP_ERROR(node->get_logger(), "FAILED to set mode!");
-                }
+                set_mode_client->async_send_request(
+                    std::make_shared<mavros_msgs::srv::SetMode::Request>(offb_set_mode),
+                    [node](rclcpp::Client<mavros_msgs::srv::SetMode>::SharedFuture response_future)
+                    {
+                        // Callback function
+                        auto result = response_future.get();
+                        if (result)
+                        {
+                            RCLCPP_INFO(node->get_logger(), "OFFBOARD MODE set");
+                        }
+                        else
+                        {
+                            RCLCPP_INFO(node->get_logger(), "FAILED TO SET OFFBOARD MODE!");
+                        }
+                    });
                 last_request = node->now();
             }
         }
         else
         {
             // Arm vehicle
-            if (!current_state.armed &&
-                (node->now() - last_request) > rclcpp::Duration(5, 0))
+            if (!current_state.armed && (node->now() - last_request) > rclcpp::Duration(5, 0))
             {
-                if (arming_client->wait_for_service(std::chrono::seconds(1)))
+                if (arming_client->wait_for_service(std::chrono::seconds(5)))
                 {
-                    if (arming_client->async_send_request(
-                                         std::make_shared<mavros_msgs::srv::CommandBool::Request>(arm_cmd),
-                                         [](rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedFuture) {})
-                            .get())
-                    {
-                        RCLCPP_INFO(node->get_logger(), "Vehicle armed");
-                    }
-                    else
-                    {
-                        RCLCPP_ERROR(node->get_logger(), "FAILED to arm vehicle!");
-                    }
-                    last_request = node->now();
+                    arming_client->async_send_request(
+                        std::make_shared<mavros_msgs::srv::CommandBool::Request>(arm_cmd),
+                        [node](rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedFuture response_future)
+                        {
+                            // Callback function
+                            auto result = response_future.get();
+                            if (result)
+                            {
+                                RCLCPP_INFO(node->get_logger(), "Vehicle armed");
+                            }
+                            else
+                            {
+                                RCLCPP_ERROR(node->get_logger(), "FAILED to arm vehicle!");
+                            }
+                        });
                 }
             }
         }
+
+        local_pos_pub->publish(pose);
         rclcpp::spin_some(node);
         rate.sleep();
     }
