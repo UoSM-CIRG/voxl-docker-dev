@@ -8,7 +8,7 @@ To get started with VOXL-Docker-Dev, follow these steps:
 
 ```
 git clone https://github.com/UoSM-CIRG/voxl-docker-dev.git
-cd voxl-docker-dev
+cd voxl-docker-dev/ros1_noetic
 ```
 
 Build the Docker image using the provided Dockerfiles, ideally on a aarch64 device.
