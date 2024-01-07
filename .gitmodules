@@ -1,0 +1,8 @@
+[submodule "ros2_humble/mavros_test/ros2_px4_ws/src/mavros"]
+    path = ros2_humble/mavros_test/ros2_px4_ws/src/mavros
+    url = https://github.com/mavlink/mavros/tree/ros2
+
+[submodule "ros2_humble/mavros_test/ros2_px4_ws/src/mavlink"]
+    path = ros2_humble/mavros_test/ros2_px4_ws/src/mavlink
+    url = https://github.com/mavlink/mavlink
+
