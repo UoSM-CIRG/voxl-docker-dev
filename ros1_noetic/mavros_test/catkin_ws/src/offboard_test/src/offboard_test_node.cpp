@@ -12,6 +12,14 @@
 #include <mavros_msgs/State.h>
 
 mavros_msgs::State current_state;
+struct circular_traj
+{
+    double dt_;
+    double theta_;
+    double radius_;
+    double omega_;
+};
+
 void state_cb(const mavros_msgs::State::ConstPtr &msg)
 {
     current_state = *msg;
@@ -58,8 +66,8 @@ int main(int argc, char **argv)
     arm_cmd.request.value = true;
 
     ros::Time last_request = ros::Time::now();
-
-    while (ros::ok() && pose.pose.position.z > 1.0)
+    auto traj = circular_traj{0.02, 0.0, 1.0, 0.5};
+    while (ros::ok())
     {
         if (current_state.mode != "OFFBOARD" &&
             (ros::Time::now() - last_request > ros::Duration(5.0)))
@@ -84,7 +92,26 @@ int main(int argc, char **argv)
                 last_request = ros::Time::now();
             }
         }
-        pose.pose.position.z -= 0.01;
+
+        if (current_state.mode == "OFFBOARD" && current_state.armed)
+        {
+            pose.pose.position.x = traj.radius_ * cos(traj.theta_);
+            pose.pose.position.y = traj.radius_ * sin(traj.theta_);
+            pose.pose.position.z = 1.5;
+
+            // Calculate angle towards the middle (origin)
+            double angle_towards_middle = atan2(0.0 - pose.pose.position.y , 0.0 - pose.pose.position.x);
+            tf2::Quaternion quat;
+            quat.setRPY(0, 0, angle_towards_middle);
+            pose.pose.orientation = tf2::toMsg(quat);
+
+            traj.theta_ = traj.theta_ + traj.omega_ * traj.dt_;
+            ROS_INFO("theta = %.2f", traj.theta_);
+            ROS_INFO("pos x = %.2f", pose.pose.position.x);
+            ROS_INFO("pos y = %.2f", pose.pose.position.y);
+            ROS_INFO("yaw angle = %.2f", angle_towards_middle);
+        }
+
         local_pos_pub.publish(pose);
         ros::spinOnce();
         rate.sleep();
