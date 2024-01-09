@@ -11,7 +11,7 @@
     <arg name="pluginlists_yaml" default="$(find-pkg-share mavros)/launch/px4_pluginlists.yaml" />
 	<arg name="config_yaml" default="$(find-pkg-share mavros)/launch/px4_config.yaml" />
 
-	<node pkg="mavros" exec="mavros_node" namespace="$(var namespace)" output="$(var log_output)" >
+	<node pkg="mavros" exec="mavros_node" namespace="$(var namespace)" output="screen" >
 		<param name="fcu_url" value="$(var fcu_url)" />
 		<param name="gcs_url" value="$(var gcs_url)" />
 		<param name="tgt_system" value="$(var tgt_system)" />
@@ -23,6 +23,6 @@
 		<param from="$(var config_yaml)" />
 	</node>
 
-    <node pkg="mavros_offb" exec="mavros_offb_node" name="mavros_offboard" output="$(var log_output)" />
+    <node pkg="mavros_offb" exec="mavros_offb_node" name="mavros_offboard" output="screen" />
 
 </launch>
