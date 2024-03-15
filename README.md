@@ -43,13 +43,13 @@ Here are the steps to change the Docker storage location in Docker 1.9.0:
 ```
 systemctl stop docker 
 ```
-- Move the Docker data directory to your desired location. Assuming you want to move it to a directory on your SD card, replace /new/location with your chosen location. By default in /etc/fstat, the sdcard if partitioned correctly, mmcblk0p1 will be mapped to /media/sdcard: 
+- Move the Docker data directory to your desired location. Assuming you want to move it to a directory on your SD card, replace /media/sdcard/docker with your chosen location. By default in /etc/fstat, the sdcard if partitioned correctly, mmcblk0p1 will be mapped to /media/sdcard: 
 ```
-sudo mv /var/lib/docker /new/location 
+sudo mv /var/lib/docker /media/sdcard/docker 
 ```
 - Create a symlink from the original location to the new location: 
 ```
-sudo ln -s /new/location /var/lib/docker 
+sudo ln -s /media/sdcard/docker /var/lib/docker 
 ```
 - Start the Docker daemon: 
 ```
