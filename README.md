@@ -105,3 +105,52 @@ You can now run voxl-configure-docker-support.sh and a hello world image will be
 You can verify that you have freed up the /data partition via `df -h` 
 
 [Special Note] Not all SD cards can be used for Docker. In our lab tests a SanDisk Ultra 16GB card worked fine but a SanDisk Extreme 32GB card failed. 
+
+### Voxl-mapper
+
+ModalAI has a mapping interface in beta. To get it, follow the instructions below.
+
+**Pre-requisites:** 
+
+voxl-mapper requires depth info, the depth info can be obtained from voxl-dfs-server, the dfs is built from camera. 
+
+Dependency chain:
+
+voxl-mapper -> voxl-dfs-server -> voxl-camera-server 
+ 
+- First update the system-image 
+
+[Flash system image](https://docs.modalai.com/flash-system-image/)
+[Voxl system image](https://docs.modalai.com/voxl-system-image/) 
+
+For seeker-slam, use camera config 3 as we are using Hires rather than ToF. 
+
+**Steps:** 
+
+-Calibrate camera as needed [Calibrate Camera](https://docs.modalai.com/calibrate-cameras/) 
+(Be patient as the re-projection error threshold is <0.5, only calibrate for stereo if using dfs, otherwise calibrate tof.) 
+ 
+-On the voxl, go to /etc/opkg/opkg.config and change the path from modalai to dev to point to the specific sdk.  
+[Pakacging on voxl](https://docs.modalai.com/packaging-on-voxl/#overview) 
+
+For sdk 1.1 uploaded in step 1, make sure the site is http://voxl-packages.modalai.com/dists/apq8096/sdk-1.1/binary-arm64/ 
+
+- Set voxl-wifi to station mode and run
+```  
+opkg update 
+opkg install voxl-portal voxl-mapper  
+```
+
+[Setting up voxl-mapper](https://docs.modalai.com/setting-up-voxl-mapper-0_9/) 
+[voxl-mapper gitlab](https://gitlab.com/voxl-public/voxl-sdk/services/voxl-mapper) 
+
+- Change the configuration
+``` 
+/etc/modalai/voxl-vision-hub.conf   
+     "offboard_mode" : "trajectory" 
+/etc/modalai/voxl-mapper.conf   
+     "tof_n_enable" : false 
+     "depth_pipe_n_enable" : true 
+```
+
+- View in voxl-portal by accessing http://192.168.8.1 
