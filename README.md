@@ -73,9 +73,10 @@ Modify the file with
  vi /lib/systemd/system/docker.service 
 ```
 
-Find the line below and remove the *–raw-logs* 
+Find the line below and remove the **–raw-logs**
+```
 ExecStart=/usr/bin/docker daemon –H fd:// --raw-logs 
-
+```
 Afterwards, power cycle the device and restart docker and docker-daemon service 
  
 From the official doc https://docs.modalai.com/docker-on-voxl/ 
@@ -101,6 +102,6 @@ rm -rf containers linkgraph.db overlay tmp volumes graph network repositories-ov
 
 You can now run voxl-configure-docker-support.sh and a hello world image will be created and the directories that were deleted from the /data partition will be in the /mnt/sdcard directory. 
 
-You can verify that you have freed up the /data partition via df -h 
+You can verify that you have freed up the /data partition via `df -h` 
 
 [Special Note] Not all SD cards can be used for Docker. In our lab tests a SanDisk Ultra 16GB card worked fine but a SanDisk Extreme 32GB card failed. 
