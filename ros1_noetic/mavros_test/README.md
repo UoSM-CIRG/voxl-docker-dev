@@ -4,6 +4,11 @@ This is a simple node to test offboard mode with mavros. It is meant to be built
 
 For more detailed instructions on using this, see https://docs.modalai.com/mavros/
 
+Remember to set the following to true at /etc/modalai/voxl-vision-hub.conf
+```
+"en_localhost_mavlink_udp":     true,
+```  
+
 ### Helper scripts:
 
 #### ros_environment.sh
