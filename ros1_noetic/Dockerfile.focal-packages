@@ -21,4 +21,6 @@ RUN bash /opt/ros/noetic/lib/mavros/install_geographiclib_datasets.sh
 
 RUN echo 'export PS1="rosnoetic:\W\\$ "' >> /root/.bashrc
 
+RUN apt-get -y install ros-noetic-common-msgs
+
 CMD /bin/bash

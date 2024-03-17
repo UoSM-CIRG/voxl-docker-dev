@@ -5,7 +5,10 @@ project(offboard_test)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   mavros
+  nav_msgs
 )
+
+generate_messages(DEPENDENCIES nav_msgs)
 
 catkin_package(
   CATKIN_DEPENDS roscpp mavros
