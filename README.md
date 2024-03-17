@@ -7,6 +7,11 @@ This repo is store dockerfiles to be used with ModalAI VoXL Development Drone.
 - [ROS1](./ros1_noetic): Docker files and mavros offboard example for ROS1.
 - [ROS2](./ros2_humble): Docker files and mavros offboard example for ROS2.
 
+## Isaac Sim ROS2 example
+
+![Circle In Pattern](images/circle_in.gif)
+![Square In Pattern](images/square_in.gif)
+
 ## Common things to look out for
 
 ### Storage

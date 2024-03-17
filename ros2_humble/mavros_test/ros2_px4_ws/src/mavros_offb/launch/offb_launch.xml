@@ -7,6 +7,7 @@
 	<arg name="fcu_protocol" default="v2.0" />
 	<arg name="respawn_mavros" default="false" />
 	<arg name="namespace" default="mavros"/>
+	<arg name="flight_pattern" default="0"/>
 
 	<node pkg="mavros" exec="mavros_node" namespace="$(var namespace)" output="screen" >
 		<param name="fcu_url" value="$(var fcu_url)" />
@@ -17,6 +18,9 @@
         <param name="respawn_mavros" value="$(var respawn_mavros)" />
 	</node>
 
-    <node pkg="mavros_offb" exec="mavros_offb_node" name="mavros_offboard" output="screen" />
+    <node pkg="mavros_offb" exec="mavros_offb_node" name="mavros_offboard" output="screen">
+    	<param name="flight_pattern" value="$(var flight_pattern)" />
+	</node>  
+
 
 </launch>

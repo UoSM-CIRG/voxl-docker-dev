@@ -10,8 +10,10 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(mavros_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+
 
 add_executable(mavros_offb_node src/offb_node.cpp)
 
@@ -19,6 +21,7 @@ ament_target_dependencies(mavros_offb_node
   rclcpp
   mavros_msgs
   geometry_msgs
+  nav_msgs
   tf2
   tf2_geometry_msgs
 )
