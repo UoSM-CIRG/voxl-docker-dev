@@ -33,7 +33,7 @@ cat rosnoetic-focal-v1.0.tar | docker import - rosnoetic-focal-v1.0
 
 Execute the following command to run the Docker image.
 ```
-voxl-docker -i rosnoetic-focal:v1.0
+voxl-docker -i rosnoetic-focal-v1.0:latest
 ```
 
 The mavros_test can be found in the container at the path yoctohome/mavros_test
