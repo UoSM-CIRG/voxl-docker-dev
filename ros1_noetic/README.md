@@ -28,8 +28,7 @@ In your host PC, access the voxl device either by SSH or ADB and navigate to the
 
 ```
 cd /data
-sudo chmod 777 rosnoetic-focal-v1.0.tar
-sudo docker load -i rosnoetic-focal-v1.0.tar
+cat rosnoetic-focal-v1.0.tar | docker import - rosnoetic-focal-v1.0
 ```
 
 Execute the following command to run the Docker image.
