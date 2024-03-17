@@ -9,6 +9,7 @@
     <arg name="log_output" default="screen" />
     <arg name="fcu_protocol" default="v2.0" />
     <arg name="respawn_mavros" default="false" />
+	<arg name="flight_pattern" default="0"/>
 
     <include file="$(find mavros)/launch/node.launch">
         <arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
@@ -23,7 +24,10 @@
         <arg name="respawn_mavros" default="$(arg respawn_mavros)" />
     </include>
 
-<node name="offboard_test_node" pkg="offboard_test" type="offboard_test_node" output="screen"/>
+    <node pkg="mavros_offb" exec="mavros_offb_node" name="mavros_offboard" output="screen">
+    	<param name="flight_pattern" value="$(var flight_pattern)" />
+	</node>  
+
 
 
 </launch>
