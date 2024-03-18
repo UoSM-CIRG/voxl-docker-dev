@@ -1,22 +1,19 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(offboard_test)
 
-
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   mavros
   nav_msgs
 )
 
-generate_messages(DEPENDENCIES nav_msgs)
-
 catkin_package(
   CATKIN_DEPENDS roscpp mavros
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS})
-
-
+include_directories(
+  include ${catkin_INCLUDE_DIRS}
+)
 
 add_executable(${PROJECT_NAME}_node src/offboard_test_node.cpp)
 
@@ -34,4 +31,5 @@ install(TARGETS
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
- )
+)
+

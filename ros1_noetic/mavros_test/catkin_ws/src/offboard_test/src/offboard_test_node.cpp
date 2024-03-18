@@ -7,7 +7,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <nav_msgs/msgs/odometry.h>
+#include <nav_msgs/Odometry.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
@@ -16,7 +16,7 @@ constexpr float PUBLISH_RATE(20.0);   // pose publishing rate
 constexpr float REVOLUTION(2 * M_PI); // 1 full circle
 
 mavros_msgs::State current_state;
-nav_msgs::msg::Odometry current_odom;
+nav_msgs::Odometry current_odom;
 
 /**
  * dt_ (Time step/Update rate)
@@ -57,7 +57,7 @@ enum class pattern
     SQUARE
 };
 
-void return_origin(geometry_msgs::msg::PoseStamped &pose)
+void return_origin(geometry_msgs::PoseStamped &pose)
 {
     pose.pose.position.x = 0.00f;
     pose.pose.position.y = 0.00f;
@@ -67,7 +67,7 @@ void return_origin(geometry_msgs::msg::PoseStamped &pose)
     pose.pose.orientation = tf2::toMsg(quat);
 };
 
-void hover_pattern(geometry_msgs::msg::PoseStamped &pose)
+void hover_pattern(geometry_msgs::PoseStamped &pose)
 {
     pose.pose.position.x = 0.00f;
     pose.pose.position.y = 0.00f;
@@ -77,7 +77,7 @@ void hover_pattern(geometry_msgs::msg::PoseStamped &pose)
     pose.pose.orientation = tf2::toMsg(quat);
 };
 
-void circular_pattern(geometry_msgs::msg::PoseStamped &pose, circular_traj &traj)
+void circular_pattern(geometry_msgs::PoseStamped &pose, circular_traj &traj)
 {
     auto multiplier = 1 + traj.theta_ / (REVOLUTION);
     pose.pose.position.x = traj.radius_ / multiplier * cos(traj.theta_);
@@ -93,7 +93,7 @@ void circular_pattern(geometry_msgs::msg::PoseStamped &pose, circular_traj &traj
     traj.theta_ = traj.theta_ + traj.omega_ * traj.dt_;
 };
 
-void square_pattern(geometry_msgs::msg::PoseStamped &pose, square_traj &traj)
+void square_pattern(geometry_msgs::PoseStamped &pose, square_traj &traj)
 {
     double target_x = 0.0;
     double target_y = 0.0;
@@ -143,12 +143,12 @@ void square_pattern(geometry_msgs::msg::PoseStamped &pose, square_traj &traj)
 };
 
 // Callback function for handling changes in the state of the vehicle
-void state_cb(const mavros_msgs::msg::State::SharedPtr msg)
+void state_cb(const mavros_msgs::State::ConstPtr msg)
 {
     current_state = *msg;
 }
 
-void odom_cb(const nav_msgs::msg::Odometry::SharedPtr msg)
+void odom_cb(const nav_msgs::Odometry::ConstPtr msg)
 {
     current_odom = *msg;
 }
@@ -159,17 +159,17 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
     // Get the parameter
     int flight_pattern;
-    nh.param<int>("flight_pattern", flight_pattern, HOVER); // Default to HOVER
+    nh.param<int>("flight_pattern", flight_pattern, static_cast<int>(pattern::HOVER)); // Default to HOVER
 
-    switch (flight_pattern)
+    switch (static_cast<pattern>(flight_pattern))
     {
-    case HOVER:
+    case pattern::HOVER:
         ROS_INFO("Flight Pattern: Hover");
         break;
-    case CIRCULAR:
+    case pattern::CIRCULAR:
         ROS_INFO("Flight Pattern: Circular");
         break;
-    case SQUARE:
+    case pattern::SQUARE:
         ROS_INFO("Flight Pattern: Square");
         break;
     default:
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
     }
 
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
-    ros::Subscriber odom_sub = nh.subscribe<nav_msgs::msg::Odometry>("mavros/odometry/in", 10, odom_cb);
+    ros::Subscriber odom_sub = nh.subscribe<nav_msgs::Odometry>("mavros/odometry/in", 10, odom_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
         // fly predefined pattern
         if (current_state.mode == "OFFBOARD" && current_state.armed && !isCompleted)
         {
-            switch (flight_pattern)
+            switch (static_cast<pattern>(flight_pattern))
             {
             case pattern::HOVER:
                 // hover for 30 sec
@@ -304,7 +304,7 @@ int main(int argc, char **argv)
         }
         else if (current_state.armed && isCompleted && current_odom.pose.pose.position.z < 0.05)
         {
-            arm_cmd.value = false;
+            arm_cmd.request.value = false;
             if (arming_client.call(arm_cmd) &&
                 arm_cmd.response.success)
             {
