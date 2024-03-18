@@ -8,6 +8,7 @@
 	<arg name="respawn_mavros" default="false" />
 	<arg name="namespace" default="mavros"/>
 	<arg name="flight_pattern" default="0"/>
+	<arg name="flight_height" default="1.00"/>
 
 	<node pkg="mavros" exec="mavros_node" namespace="$(var namespace)" output="screen" >
 		<param name="fcu_url" value="$(var fcu_url)" />
@@ -20,6 +21,7 @@
 
     <node pkg="mavros_offb" exec="mavros_offb_node" name="mavros_offboard" output="screen">
     	<param name="flight_pattern" value="$(var flight_pattern)" />
+		<param name="flight_height" value="$(var flight_height)" />
 	</node>  
 
 

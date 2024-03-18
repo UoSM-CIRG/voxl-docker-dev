@@ -18,6 +18,11 @@ rosdep install --from-paths src --ignore-src -y
 ./src/mavros/mavros/scripts/install_geographiclib_datasets.sh
 colcon build --symlink-install
 ```
+### To launch
+
+```
+ros2 launch mavros_offb offb_launch.xml flight_height:=2.0 flight_pattern:=1
+```
 
 ### Custom Feature
 

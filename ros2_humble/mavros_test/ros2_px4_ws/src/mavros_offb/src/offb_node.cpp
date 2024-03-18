@@ -17,10 +17,12 @@
 
 constexpr float PUBLISH_RATE (20.0); // pose publishing rate
 constexpr float REVOLUTION(2 * M_PI); // 1 full circle
-constexpr float HEIGHT (1.25); // const flight height
 
+
+// global
 mavros_msgs::msg::State current_state;
 nav_msgs::msg::Odometry current_odom;
+float height; // const flight height
 
 /**
  * dt_ (Time step/Update rate)
@@ -75,7 +77,7 @@ void hover_pattern(geometry_msgs::msg::PoseStamped &pose)
 {
     pose.pose.position.x = 0.00f;
     pose.pose.position.y = 0.00f;
-    pose.pose.position.z = HEIGHT;
+    pose.pose.position.z = height;
     tf2::Quaternion quat;
     quat.setRPY(0, 0, 0);
     pose.pose.orientation = tf2::toMsg(quat);
@@ -86,7 +88,7 @@ void circular_pattern(geometry_msgs::msg::PoseStamped &pose, circular_traj &traj
     auto multiplier = 1 + traj.theta_ / (REVOLUTION);
     pose.pose.position.x = traj.radius_ / multiplier * cos(traj.theta_);
     pose.pose.position.y = traj.radius_ / multiplier * sin(traj.theta_);
-    pose.pose.position.z = HEIGHT;
+    pose.pose.position.z = height;
 
     // Calculate angle towards the middle (origin)
     double angle_towards_middle = atan2(0.0 - pose.pose.position.y, 0.0 - pose.pose.position.x);
@@ -130,7 +132,7 @@ void square_pattern(geometry_msgs::msg::PoseStamped &pose, square_traj &traj)
 
     pose.pose.position.x = target_x / multiplier;
     pose.pose.position.y = target_y / multiplier;
-    pose.pose.position.z = HEIGHT;
+    pose.pose.position.z = height;
 
     // Set yaw orientation
     tf2::Quaternion quat;
@@ -168,6 +170,9 @@ int main(int argc, char *argv[])
     node->declare_parameter("flight_pattern", rclcpp::ParameterValue(0)); // Default to HOVER
     rclcpp::Parameter flight_pattern_param = node->get_parameter("flight_pattern");
     const pattern flight_pattern = static_cast<pattern>(flight_pattern_param.as_int());
+    node->declare_parameter("flight_height", rclcpp::ParameterValue(1.00)); // Default to HOVER
+    height = node->get_parameter("flight_height").as_double();
+    RCLCPP_INFO(node->get_logger(), "Flight Height: %.2f", height);
 
     switch (flight_pattern)
     {
