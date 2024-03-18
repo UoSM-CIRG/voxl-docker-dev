@@ -162,7 +162,7 @@ int main(int argc, char **argv)
     // Get the parameter
     int flight_pattern;
     nh.param<int>("flight_pattern", flight_pattern, static_cast<int>(pattern::HOVER)); // Default to HOVER
-    nh.param<int>("flight_height", height, 1.00f); // Default flight height - 1.0m
+    nh.param<float>("flight_height", height, 1.00f); // Default flight height - 1.0m
 
     switch (static_cast<pattern>(flight_pattern))
     {
