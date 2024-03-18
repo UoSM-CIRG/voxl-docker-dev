@@ -181,7 +181,7 @@ int main(int argc, char **argv)
     }
 
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
-    ros::Subscriber odom_sub = nh.subscribe<nav_msgs::Odometry>("mavros/odometry/in", 10, odom_cb);
+    ros::Subscriber odom_sub = nh.subscribe<nav_msgs::Odometry>("mavros/local_position/odom", 10, odom_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
@@ -199,7 +199,7 @@ int main(int argc, char **argv)
     geometry_msgs::PoseStamped pose;
     pose.pose.position.x = 0;
     pose.pose.position.y = 0;
-    pose.pose.position.z = 1.25;
+    pose.pose.position.z = height;
     pose.pose.orientation = tf2::toMsg(tf2::Quaternion(0, 0, 0, 1)); // No rotation (yaw = 0)
 
     // send a few setpoints before starting
@@ -223,97 +223,97 @@ int main(int argc, char **argv)
     auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.5, 0, 0.0};
     while (ros::ok())
     {
-        // if (current_state.mode != "OFFBOARD" &&
-        //     (ros::Time::now() - last_request > ros::Duration(5.0)))
-        // {
-        //     if (set_mode_client.call(offb_set_mode) &&
-        //         offb_set_mode.response.mode_sent)
-        //     {
-        //         ROS_INFO("Offboard enabled");
-        //     }
-        //     last_request = ros::Time::now();
-        // }
-        // else
-        // {
-        //     if (!current_state.armed &&
-        //         (ros::Time::now() - last_request > ros::Duration(5.0)))
-        //     {
-        //         if (arming_client.call(arm_cmd) &&
-        //             arm_cmd.response.success)
-        //         {
-        //             ROS_INFO("Vehicle armed");
-        //         }
-        //         last_request = ros::Time::now();
-        //     }
-        // }
+        if (current_state.mode != "OFFBOARD" &&
+            (ros::Time::now() - last_request > ros::Duration(5.0)))
+        {
+            if (set_mode_client.call(offb_set_mode) &&
+                offb_set_mode.response.mode_sent)
+            {
+                ROS_INFO("Offboard enabled");
+            }
+            last_request = ros::Time::now();
+        }
+        else
+        {
+            if (!current_state.armed &&
+                (ros::Time::now() - last_request > ros::Duration(5.0)))
+            {
+                if (arming_client.call(arm_cmd) &&
+                    arm_cmd.response.success)
+                {
+                    ROS_INFO("Vehicle armed");
+                }
+                last_request = ros::Time::now();
+            }
+        }
 
         // fly predefined pattern
-        // if (current_state.mode == "OFFBOARD" && current_state.armed && !isCompleted)
-        // {
-        //     switch (static_cast<pattern>(flight_pattern))
-        //     {
-        //     case pattern::HOVER:
-        //         // hover for 30 sec
-        //         hover_pattern(pose);
-        //         if ((ros::Time::now() - last_request > ros::Duration(30.0)))
-        //             isCompleted = true;
-        //         break;
-        //     case pattern::CIRCULAR:
-        //         if (!isReady)
-        //         {
-        //             hover_pattern(pose);
-        //             last_request = ros::Time::now();
-        //             isReady = true;
-        //         }
-        //         // hover first for 10 sec
-        //         if (isReady && (ros::Time::now() - last_request > ros::Duration(10.0)))
-        //         {
-        //             ROS_INFO("Traj theta = %.2f", cir_traj.theta_);
-        //             if (cir_traj.theta_ > (2 * REVOLUTION))
-        //                 isCompleted = true;
-        //             else
-        //                 circular_pattern(pose, cir_traj);
-        //         }
-        //         break;
-        //     case pattern::SQUARE:
-        //         if (!isReady)
-        //         {
-        //             hover_pattern(pose);
-        //             last_request = ros::Time::now();
-        //             isReady = true;
-        //         }
-        //         // hover first for 10 sec
-        //         if (isReady && (ros::Time::now() - last_request > ros::Duration(10.0)))
-        //         {
-        //             ROS_INFO("Traj segment = %d", squ_traj.segment_);
-        //             if (squ_traj.segment_ > 8)
-        //                 isCompleted = true;
-        //             else
-        //                 square_pattern(pose, squ_traj);
-        //         }
-        //         break;
-        //     default:
-        //         isCompleted = true;
-        //         break;
-        //     }
-        // }
-        ROS_WARN("Altitude = %.2f m", current_odom.pose.pose.position.z);
+        if (current_state.mode == "OFFBOARD" && current_state.armed && !isCompleted)
+        {
+            switch (static_cast<pattern>(flight_pattern))
+            {
+            case pattern::HOVER:
+                // hover for 30 sec
+                hover_pattern(pose);
+                if ((ros::Time::now() - last_request > ros::Duration(30.0)))
+                    isCompleted = true;
+                break;
+            case pattern::CIRCULAR:
+                if (!isReady)
+                {
+                    hover_pattern(pose);
+                    last_request = ros::Time::now();
+                    isReady = true;
+                }
+                // hover first for 10 sec
+                if (isReady && (ros::Time::now() - last_request > ros::Duration(10.0)))
+                {
+                    ROS_INFO("Traj theta = %.2f", cir_traj.theta_);
+                    if (cir_traj.theta_ > (2 * REVOLUTION))
+                        isCompleted = true;
+                    else
+                        circular_pattern(pose, cir_traj);
+                }
+                break;
+            case pattern::SQUARE:
+                if (!isReady)
+                {
+                    hover_pattern(pose);
+                    last_request = ros::Time::now();
+                    isReady = true;
+                }
+                // hover first for 10 sec
+                if (isReady && (ros::Time::now() - last_request > ros::Duration(10.0)))
+                {
+                    ROS_INFO("Traj segment = %d", squ_traj.segment_);
+                    if (squ_traj.segment_ > 8)
+                        isCompleted = true;
+                    else
+                        square_pattern(pose, squ_traj);
+                }
+                break;
+            default:
+                isCompleted = true;
+                break;
+            }
+        }
+
         // return to origin if still mid air
-        // if (current_state.armed && isCompleted && current_odom.pose.pose.position.z > 0.05)
-        // {
-        //     return_origin(pose);
-        //     ROS_INFO("Returning to Origin!");
-        //     ROS_WARN("Altitude = %.2f m", current_odom.pose.pose.position.z);
-        // }
-        // else if (current_state.armed && isCompleted && current_odom.pose.pose.position.z < 0.05)
-        // {
-        //     arm_cmd.request.value = false;
-        //     if (arming_client.call(arm_cmd) &&
-        //         arm_cmd.response.success)
-        //     {
-        //         ROS_INFO("Vehicle disarmed");
-        //     }
-        // }
+        if (current_state.armed && isCompleted && current_odom.pose.pose.position.z > 0.1)
+        {
+            return_origin(pose);
+            ROS_INFO("Returning to Origin!");
+            ROS_WARN("Altitude = %.2f m", current_odom.pose.pose.position.z);
+        }
+        else if (current_state.armed && isCompleted && current_odom.pose.pose.position.z =< 0.1)
+        {
+            arm_cmd.request.value = false;
+            if (arming_client.call(arm_cmd) &&
+                arm_cmd.response.success)
+            {
+                ROS_INFO("Vehicle disarmed");
+            }
+        }
 
         local_pos_pub.publish(pose);
         ros::spinOnce();

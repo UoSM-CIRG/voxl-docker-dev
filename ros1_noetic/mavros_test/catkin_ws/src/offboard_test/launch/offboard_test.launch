@@ -22,7 +22,7 @@
         <arg name="respawn_mavros" default="$(arg respawn_mavros)" />
     </include>
 
-    <node pkg="mavros_offb" exec="mavros_offb_node" name="mavros_offboard" output="screen">
+    <node pkg="offboard_test" exec="offboard_test_node" name="offboard_test_node" output="screen">
         <param name="flight_pattern" value="$(arg flight_pattern)" />
         <param name="flight_height" value="$(arg flight_height)" />
     </node>  
