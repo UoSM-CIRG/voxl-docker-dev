@@ -230,11 +230,13 @@ void odom_cb(const nav_msgs::Odometry::ConstPtr msg)
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "offb_node");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
     // Get the parameter
     int flight_pattern;
     nh.param<int>("flight_pattern", flight_pattern, static_cast<int>(pattern::HOVER)); // Default to HOVER
     nh.param<float>("flight_height", height, 1.00f); // Default flight height - 1.0m
+
+    ROS_WARN("Flight Height = %.2f m", height);
 
     switch (static_cast<pattern>(flight_pattern))
     {
@@ -294,13 +296,20 @@ int main(int argc, char **argv)
     bool isCompleted = false;
     bool isReady = false;
     ros::Time last_request = ros::Time::now();
+<<<<<<< HEAD
     auto cir_traj = circular_traj{0.05, 0.0, 1.0, 0.1};
     auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.1, 0, 0.0};
     auto sta_traj = star_traj{0.05, 1.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0};
+=======
+    auto cir_traj = circular_traj{0.05, 0.0, 1.0, 0.5};
+    auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.5, 0, 0.0};
+
+    ROS_WARN("Starting offboard node!");
+>>>>>>> 72e72efdb9adea9a8bbe1f5483eb4f913008f040
     while (ros::ok())
     {
         if (current_state.mode != "OFFBOARD" &&
-            (ros::Time::now() - last_request > ros::Duration(5.0)))
+            (ros::Time::now() - last_request > ros::Duration(3.0)))
         {
             if (set_mode_client.call(offb_set_mode) &&
                 offb_set_mode.response.mode_sent)
@@ -312,7 +321,7 @@ int main(int argc, char **argv)
         else
         {
             if (!current_state.armed &&
-                (ros::Time::now() - last_request > ros::Duration(5.0)))
+                (ros::Time::now() - last_request > ros::Duration(3.0)))
             {
                 if (arming_client.call(arm_cmd) &&
                     arm_cmd.response.success)
@@ -398,7 +407,7 @@ int main(int argc, char **argv)
             ROS_INFO("Returning to Origin!");
             ROS_WARN("Altitude = %.2f m", current_odom.pose.pose.position.z);
         }
-        else if (current_state.armed && isCompleted && current_odom.pose.pose.position.z =< 0.1)
+        else if (current_state.armed && isCompleted && current_odom.pose.pose.position.z <= 0.1)
         {
             arm_cmd.request.value = false;
             if (arming_client.call(arm_cmd) &&
