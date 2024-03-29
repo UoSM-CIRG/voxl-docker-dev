@@ -7,7 +7,7 @@
 	<arg name="fcu_protocol" default="v2.0" />
 	<arg name="respawn_mavros" default="false" />
 	<arg name="namespace" default="mavros"/>
-	<arg name="flight_pattern" default="0"/>
+	<arg name="flight_pattern" default="3"/>
 	<arg name="flight_height" default="1.00"/>
 
 	<node pkg="mavros" exec="mavros_node" namespace="$(var namespace)" output="screen" >
