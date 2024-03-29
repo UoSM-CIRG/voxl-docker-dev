@@ -189,7 +189,7 @@ constexpr double calculate_star_y(double radius, double angle, double offset_y =
     return effective_radius * sin(angle) + offset_y;
 }
 
-void star_pattern(geometry_msgs::msg::PoseStamped &pose, star_traj &traj)
+void star_pattern(geometry_msgs::PoseStamped &pose, star_traj &traj)
 {
     // Move along a line segment
     double start_angle = traj.segment_ * 2 * M_PI / 10;
@@ -374,13 +374,13 @@ int main(int argc, char **argv)
                 if (!isReady)
                 {
                     hover_pattern(pose);
-                    last_request = node->now();
+                    last_request = ros::Time::now();
                     isReady = true;
                 }
                 // hover first for 10 sec
-                if (isReady && (node->now() - last_request) > rclcpp::Duration(10, 0))
+                if (isReady && (ros::Time::now() - last_request > ros::Duration(10.0)))
                 {
-                    RCLCPP_WARN(node->get_logger(), "Traj segment = %d", sta_traj.segment_);
+                   ROS_INFO("Traj segment = %d", sta_traj.segment_);
                     if (sta_traj.segment_ > 9)
                         isCompleted = true;
                     else
