@@ -296,16 +296,9 @@ int main(int argc, char **argv)
     bool isCompleted = false;
     bool isReady = false;
     ros::Time last_request = ros::Time::now();
-<<<<<<< HEAD
-    auto cir_traj = circular_traj{0.05, 0.0, 1.0, 0.1};
-    auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.1, 0, 0.0};
-    auto sta_traj = star_traj{0.05, 1.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0};
-=======
-    auto cir_traj = circular_traj{0.05, 0.0, 1.0, 0.5};
-    auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.5, 0, 0.0};
-
-    ROS_WARN("Starting offboard node!");
->>>>>>> 72e72efdb9adea9a8bbe1f5483eb4f913008f040
+    auto cir_traj = circular_traj{0.05, 0.0, 1.0, 0.3};
+    auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.3, 0, 0.0};
+    auto sta_traj = star_traj{0.05, 1.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0};
     while (ros::ok())
     {
         if (current_state.mode != "OFFBOARD" &&

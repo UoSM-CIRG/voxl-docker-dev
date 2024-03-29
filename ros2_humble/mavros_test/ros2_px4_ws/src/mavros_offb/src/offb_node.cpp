@@ -199,7 +199,7 @@ constexpr double calculate_star_y(double radius, double angle, double offset_y =
 void star_pattern(geometry_msgs::msg::PoseStamped &pose, star_traj &traj)
 {
     // Move along a line segment
-    double start_angle = traj.segment_ * 2 * M_PI / 10;
+    double start_angle = traj.segment_%10 * 2 * M_PI / 10;
     double end_angle = start_angle + 2 * M_PI / 10;
 
     double target_x = calculate_star_x(traj.radius_, start_angle + traj.progress_ * (end_angle - start_angle), traj.offset_x_);
@@ -219,7 +219,7 @@ void star_pattern(geometry_msgs::msg::PoseStamped &pose, star_traj &traj)
     traj.progress_ += traj.speed_ * traj.dt_;
     if (traj.progress_ >= 1.0) {
         traj.progress_ = 0.0;
-        traj.segment_ = (traj.segment_ + 1) % 10; 
+        traj.segment_++; 
     }
 };
 
@@ -326,9 +326,9 @@ int main(int argc, char *argv[])
     bool isCompleted = false;
     bool isReady = false;
     auto last_request = node->now();
-    auto cir_traj = circular_traj{0.05, 0.0, 1.0, 0.5};
-    auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.5, 0, 0.0};
-    auto sta_traj = star_traj{0.05, 2.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0};
+    auto cir_traj = circular_traj{0.05, 0.0, 1.0, 0.3};
+    auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.3, 0, 0.0};
+    auto sta_traj = star_traj{0.05, 1.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0};
 
     while (rclcpp::ok())
     {
@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
                 if (isReady && (node->now() - last_request) > rclcpp::Duration(10, 0))
                 {
                     RCLCPP_WARN(node->get_logger(), "Traj segment = %d", sta_traj.segment_);
-                    if (sta_traj.segment_ > 9)
+                    if (sta_traj.segment_ >9)
                         isCompleted = true;
                     else
                         star_pattern(pose, sta_traj);
