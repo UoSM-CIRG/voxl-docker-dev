@@ -35,7 +35,7 @@ struct circular_traj
     double dt_ = 1/PUBLISH_RATE;
     double theta_ = 0.00f;
     double radius_ = 2.00f;
-    double omega_ = 0.5f;
+    double omega_ = 0.1f;
 };
 
 /**
@@ -51,7 +51,7 @@ struct square_traj
     double dt_ = 1/PUBLISH_RATE;
     double side_length_ = 2.00f;
     double offset_ = 0.00f;
-    double speed_ = 0.5f;
+    double speed_ = 0.1f;
     int segment_ = 0;
     double progress_ = 0.00f;
 };
@@ -69,10 +69,10 @@ struct square_traj
 struct star_traj
 {
     double dt_ = 1/PUBLISH_RATE;
-    double radius_ = 2.0;      
+    double radius_ = 1.0;      
     double offset_x_ = 0.0;    
     double offset_y_ = 0.0;    
-    double speed_ = 0.5f;
+    double speed_ = 0.1f;
     double angle_ = 0.0;       
     double progress_ = 0.0;    
     int segment_ = 0;          
@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
                 if (isReady && (node->now() - last_request) > rclcpp::Duration(10, 0))
                 {
                     RCLCPP_WARN(node->get_logger(), "Traj segment = %d", sta_traj.segment_);
-                    if (squ_traj.segment_ > 9)
+                    if (sta_traj.segment_ > 9)
                         isCompleted = true;
                     else
                         star_pattern(pose, sta_traj);
