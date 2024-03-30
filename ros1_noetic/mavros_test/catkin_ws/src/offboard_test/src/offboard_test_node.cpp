@@ -192,7 +192,7 @@ constexpr double calculate_star_y(double radius, double angle, double offset_y =
 void star_pattern(geometry_msgs::PoseStamped &pose, star_traj &traj)
 {
     // Move along a line segment
-    double start_angle = traj.segment_ * 2 * M_PI / 10;
+    double start_angle = traj.segment_%10 * 2 * M_PI / 10;
     double end_angle = start_angle + 2 * M_PI / 10;
 
     double target_x = calculate_star_x(traj.radius_, start_angle + traj.progress_ * (end_angle - start_angle), traj.offset_x_);
@@ -212,7 +212,7 @@ void star_pattern(geometry_msgs::PoseStamped &pose, star_traj &traj)
     traj.progress_ += traj.speed_ * traj.dt_;
     if (traj.progress_ >= 1.0) {
         traj.progress_ = 0.0;
-        traj.segment_ = (traj.segment_ + 1) % 10; 
+        traj.segment_++; 
     }
 };
 
