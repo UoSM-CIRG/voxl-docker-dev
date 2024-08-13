@@ -41,22 +41,39 @@ int main(int argc, char **argv)
     // Get the parameter
     int flight_pattern_;
     nh.param<int>("flight_pattern", flight_pattern_, 0);
-    const auto flight_pattern = static_cast<uosm::flight_pattern::PatternFactory::PatternType>(flight_pattern_.as_int());
+    const auto flight_pattern = static_cast<uosm::flight_pattern::PatternFactory::PatternType>(flight_pattern_);
+
     int max_iter_;
     nh.param<int>("max_iter", max_iter_, 2);
 
-    uosm::flight_pattern::PatternParameters flight_params;
-    nh.param<float>("dt", flight_params.dt, 0.05f);
-    nh.param<float>("radius", flight_params.radius, 0.80f);
-    nh.param<float>("height", flight_params.height, 1.00f);
-    nh.param<float>("speed", flight_params.speed, 0.30f);
-    nh.param<float>("min_speed", flight_params.min_speed, 0.05f);
-    nh.param<float>("offset_x", flight_params.offset_x, 0.00f);
-    nh.param<float>("offset_y", flight_params.offset_y, 0.00f);
-    nh.param<float>("offset_z", flight_params.offset_z, 0.00f);
-    nh.param<float>("frequency", flight_params.frequency, 0.00f);
-    nh.param<int>("ngram_vertices", flight_params.ngram_vertices, 7);
-    nh.param<int>("ngram_step", flight_params.ngram_step, 2);
+    float dt;
+    float radius;
+    float height;
+    float speed;
+    float min_speed;
+    float offset_x;
+    float offset_y;
+    float offset_z;
+    float frequency;
+    int ngram_vertices;
+    int ngram_step;
+
+    nh.param<float>("dt", dt, 0.05f);
+    nh.param<float>("radius", radius, 0.80f);
+    nh.param<float>("height", height, 1.00f);
+    nh.param<float>("speed", speed, 0.30f);
+    nh.param<float>("min_speed", min_speed, 0.05f);
+    nh.param<float>("offset_x", offset_x, 0.00f);
+    nh.param<float>("offset_y", offset_y, 0.00f);
+    nh.param<float>("offset_z", offset_z, 0.00f);
+    nh.param<float>("frequency", frequency, 0.00f);
+    nh.param<int>("ngram_vertices", ngram_vertices, 7);
+    nh.param<int>("ngram_step", ngram_step, 2);
+
+    const uosm::flight_pattern::PatternParameters flight_params{
+        dt, radius, height, speed, min_speed, offset_x, offset_y, offset_z, frequency, ngram_vertices, ngram_step
+    };
+ 
 
     if(std::__gcd(flight_params.ngram_vertices, flight_params.ngram_step) != 1)
     {
@@ -160,14 +177,14 @@ int main(int argc, char **argv)
             if (!isReady)
             {
                 pattern->hover(pose);
-                last_request = node->now();
+                last_request = ros::Time::now();
                 isReady = true;
             }
             // hover first for 5 sec
-            if (isReady && (node->now() - last_request) > ros::Duration(5.0))
+            if (isReady && (ros::Time::now() - last_request) > ros::Duration(5.0))
             {
                 pattern->run(pose);
-                isCompleted = pattern->is_done(max_iter);
+                isCompleted = pattern->is_done(max_iter_);
             }
         }
 

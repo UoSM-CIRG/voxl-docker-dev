@@ -53,7 +53,7 @@ namespace uosm
              * @param pose The pose of the drone
              *
              */
-            virtual void run(geometry_msgs::msg::PoseStamped &pose) = 0;
+            virtual void run(geometry_msgs::PoseStamped &pose) = 0;
             virtual ~Pattern() = default;
 
             /**
@@ -62,7 +62,7 @@ namespace uosm
              * @param pose The pose of the drone
              *
              */
-            void hover(geometry_msgs::msg::PoseStamped &pose) const
+            void hover(geometry_msgs::PoseStamped &pose) const
             {
                 pose.pose.position.x = params_.offset_x;
                 pose.pose.position.y = params_.offset_y;
@@ -77,7 +77,7 @@ namespace uosm
              * @param pose The pose of the drone
              *
              */
-            void return_origin(geometry_msgs::msg::PoseStamped &pose) const
+            void return_origin(geometry_msgs::PoseStamped &pose) const
             {
                 pose.pose.position.x = 0.0f;
                 pose.pose.position.y = 0.0f;
@@ -121,7 +121,7 @@ namespace uosm
                 params_ = params;
             }
 
-            void run(geometry_msgs::msg::PoseStamped &pose) override
+            void run(geometry_msgs::PoseStamped &pose) override
             {
                 pose.pose.position.x = params_.radius * cos(theta_) + params_.offset_x;
                 pose.pose.position.y = params_.radius * sin(theta_) + params_.offset_y;
@@ -144,7 +144,7 @@ namespace uosm
                 params_ = params;
             }
 
-            void run(geometry_msgs::msg::PoseStamped &pose) override
+            void run(geometry_msgs::PoseStamped &pose) override
             {
                 pose.pose.position.x = params_.radius * cos(theta_) + params_.offset_x;
                 pose.pose.position.y = params_.radius * sin(theta_) + params_.offset_y;
@@ -171,7 +171,7 @@ namespace uosm
                 params_ = params;
             }
 
-            void run(geometry_msgs::msg::PoseStamped &pose) override
+            void run(geometry_msgs::PoseStamped &pose) override
             {
                 double noise_amplitude = params_.radius / 4.0;
 
@@ -216,7 +216,7 @@ namespace uosm
                 period_length_ = 2.0 * M_PI/params_.frequency; 
             }
 
-            void run(geometry_msgs::msg::PoseStamped &pose) 
+            void run(geometry_msgs::PoseStamped &pose) 
             {
                 // Calculate the progress step for each update
                 double progress_step = params_.speed * params_.dt;
@@ -316,7 +316,7 @@ namespace uosm
                 order_ = generate_order(params_.ngram_vertices, params_.ngram_step);
             }
 
-            void run(geometry_msgs::msg::PoseStamped &pose) override
+            void run(geometry_msgs::PoseStamped &pose) override
             {
                 double start_x, start_y, end_x, end_y = 0.0f;
                 int start_index = 0;
