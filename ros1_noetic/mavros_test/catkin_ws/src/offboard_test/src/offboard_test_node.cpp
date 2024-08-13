@@ -1,7 +1,8 @@
 /**
  * @file offb_node.cpp
- * @brief Offboard control example node, written with MAVROS version 0.19.x, PX4 Pro Flight
- * Stack and tested in Gazebo SITL
+ * @brief Offboard control example node, written with MAVROS version for ROS2 as an alternate to PX4 Pro Flight FastRTPS/uXRCE-DDS
+ * @author UoSM-CIRG Janitor
+ * @date 2024-05-24
  */
 
 #include <ros/ros.h>
@@ -12,209 +13,15 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 
-constexpr float PUBLISH_RATE(20.0);   // pose publishing rate
-constexpr float REVOLUTION(2 * M_PI); // 1 full circle
+#include <bits/stdc++.h> 
+#include "FlightPattern.hpp"
+
+constexpr float PUBLISH_RATE(20.0);                 // pose publishing rate
+const std::string FLIGHT_MODE_OFFBOARD("OFFBOARD"); // offboard mode
 
 //global
 mavros_msgs::State current_state;
 nav_msgs::Odometry current_odom;
-float height; // flight height param
-
-/**
- * dt_ (Time step/Update rate)
- * theta_ (Current angle along the circular path)
- * radius_ (Radius of circle)
- * omega_ (Angular velocity)
- */
-struct circular_traj
-{
-    double dt_ = 1/PUBLISH_RATE;
-    double theta_ = 0.00f;
-    double radius_ = 2.00f;
-    double omega_ = 0.1f;
-};
-
-/**
- * dt_ (Time step/Update rate)
- * side_length_ (Length of one side of the square)
- * offset_ (Offset of origin)
- * speed_ (Linear speed)
- * segment_ (Current segment [0-3])
- * progress_ (Progress along the current segment [0.0 - 1.0])
- */
-struct square_traj
-{
-    double dt_ = 1/PUBLISH_RATE;
-    double side_length_ = 2.00f;
-    double offset_ = 0.00f;
-    double speed_ = 0.1f;
-    int segment_ = 0;
-    double progress_ = 0.00f;
-};
-
-/**
- * dt_ (Time step/Update rate)
- * radius_ (Radius of the star)
- * offset_x_ (Center x-offset)
- * offset_y_ (Center y-offset)
- * angle_ (Current angle)
- * speed_ (Linear speed)
- * progress_ (Progress along current segment [0.0 - 1.0])
- * segment_ (Current line segment of the star [0-9]))
-*/
-struct star_traj
-{
-    double dt_ = 1/PUBLISH_RATE;
-    double radius_ = 1.0;      
-    double offset_x_ = 0.0;    
-    double offset_y_ = 0.0;    
-    double speed_ = 0.1f;
-    double angle_ = 0.0;       
-    double progress_ = 0.0;    
-    int segment_ = 0;          
-};
-
-enum class pattern
-{
-    HOVER = 0,
-    CIRCULAR,
-    SQUARE,
-    STAR
-};
-
-void return_origin(geometry_msgs::PoseStamped &pose)
-{
-    pose.pose.position.x = 0.00f;
-    pose.pose.position.y = 0.00f;
-    pose.pose.position.z = 0.00f;
-    tf2::Quaternion quat;
-    quat.setRPY(0, 0, 0);
-    pose.pose.orientation = tf2::toMsg(quat);
-};
-
-void hover_pattern(geometry_msgs::PoseStamped &pose)
-{
-    pose.pose.position.x = 0.00f;
-    pose.pose.position.y = 0.00f;
-    pose.pose.position.z = height;
-    tf2::Quaternion quat;
-    quat.setRPY(0, 0, 0);
-    pose.pose.orientation = tf2::toMsg(quat);
-};
-
-void circular_pattern(geometry_msgs::PoseStamped &pose, circular_traj &traj)
-{
-    auto multiplier = 1 + traj.theta_ / (REVOLUTION);
-    pose.pose.position.x = traj.radius_ / multiplier * cos(traj.theta_);
-    pose.pose.position.y = traj.radius_ / multiplier * sin(traj.theta_);
-    pose.pose.position.z = height;
-
-    // Calculate angle towards the middle (origin)
-    double angle_towards_middle = atan2(0.0 - pose.pose.position.y, 0.0 - pose.pose.position.x);
-    tf2::Quaternion quat;
-    quat.setRPY(0, 0, angle_towards_middle);
-    pose.pose.orientation = tf2::toMsg(quat);
-
-    traj.theta_ = traj.theta_ + traj.omega_ * traj.dt_;
-};
-
-void square_pattern(geometry_msgs::PoseStamped &pose, square_traj &traj)
-{
-    double target_x = 0.0;
-    double target_y = 0.0;
-    double target_yaw = 0.0; // in radians
-    auto multiplier = 1 + static_cast<int>(traj.segment_ / 4);
-
-    switch (traj.segment_ % 4)
-    {
-    case 0: // Move forward (along x-axis)
-        target_x = -traj.offset_ + traj.progress_ * traj.side_length_;
-        target_y = traj.offset_;
-        target_yaw = 0.0;
-        break;
-    case 1: // Move sideways (along y-axis)
-        target_x = -traj.offset_ + traj.side_length_;
-        target_y = traj.offset_ - traj.progress_ * traj.side_length_;
-        target_yaw = -M_PI_2; // 90 degrees
-        break;
-    case 2: // Move backward
-        target_x = -traj.offset_ + (1.0 - traj.progress_) * traj.side_length_;
-        target_y = traj.offset_ - traj.side_length_;
-        target_yaw = M_PI; // 180 degrees
-        break;
-    case 3: // Move sideways (back to the start)
-        target_x = -traj.offset_;
-        target_y = traj.offset_ - (1.0 - traj.progress_) * traj.side_length_;
-        target_yaw = M_PI_2; // -90 degrees
-        break;
-    }
-
-    pose.pose.position.x = target_x / multiplier;
-    pose.pose.position.y = target_y / multiplier;
-    pose.pose.position.z = height;
-
-    // Set yaw orientation
-    tf2::Quaternion quat;
-    quat.setRPY(0, 0, target_yaw);
-    pose.pose.orientation = tf2::toMsg(quat);
-
-    // Update trajectory state
-    traj.progress_ += traj.speed_ * traj.dt_ / traj.side_length_;
-    if (traj.progress_ >= 1.0)
-    {
-        traj.progress_ = 0.0;
-        ++traj.segment_;
-    }
-};
-
-constexpr double calculate_star_x(double radius, double angle, double offset_x = 0.0)
-{
-    double outer_radius = radius;
-    double inner_radius = radius * 0.382; // Ratio based on the golden ratio
-
-    bool outer_point = fmod(angle, (2 * M_PI / 5)) < M_PI / 5;
-    double effective_radius = outer_point ? outer_radius : inner_radius;
-
-    return effective_radius * cos(angle) + offset_x;
-}
-
-constexpr double calculate_star_y(double radius, double angle, double offset_y = 0.0)
-{
-    double outer_radius = radius;
-    double inner_radius = radius * 0.382; 
-
-    bool outer_point = fmod(angle, (2 * M_PI / 5)) < M_PI / 5;
-    double effective_radius = outer_point ? outer_radius : inner_radius;
-
-    return effective_radius * sin(angle) + offset_y;
-}
-
-void star_pattern(geometry_msgs::PoseStamped &pose, star_traj &traj)
-{
-    // Move along a line segment
-    double start_angle = traj.segment_%10 * 2 * M_PI / 10;
-    double end_angle = start_angle + 2 * M_PI / 10;
-
-    double target_x = calculate_star_x(traj.radius_, start_angle + traj.progress_ * (end_angle - start_angle), traj.offset_x_);
-    double target_y = calculate_star_y(traj.radius_, start_angle + traj.progress_ * (end_angle - start_angle), traj.offset_y_);
-
-    pose.pose.position.x = target_x;
-    pose.pose.position.y = target_y;
-    pose.pose.position.z = height;
-
-    // Orientation: Face the center of the pentagram 
-    double angle_towards_middle = atan2(traj.offset_y_ - pose.pose.position.y, traj.offset_x_ - pose.pose.position.x);
-    tf2::Quaternion quat;
-    quat.setRPY(0, 0, angle_towards_middle);
-    pose.pose.orientation = tf2::toMsg(quat);
-
-    // Update trajectory state
-    traj.progress_ += traj.speed_ * traj.dt_;
-    if (traj.progress_ >= 1.0) {
-        traj.progress_ = 0.0;
-        traj.segment_++; 
-    }
-};
 
 // Callback function for handling changes in the state of the vehicle
 void state_cb(const mavros_msgs::State::ConstPtr msg)
@@ -232,25 +39,47 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "offb_node");
     ros::NodeHandle nh("~");
     // Get the parameter
-    int flight_pattern;
-    nh.param<int>("flight_pattern", flight_pattern, static_cast<int>(pattern::HOVER)); // Default to HOVER
-    nh.param<float>("flight_height", height, 1.00f); // Default flight height - 1.0m
+    int flight_pattern_;
+    nh.param<int>("flight_pattern", flight_pattern_, 0);
+    const auto flight_pattern = static_cast<uosm::flight_pattern::PatternFactory::PatternType>(flight_pattern_.as_int());
+    int max_iter_;
+    nh.param<int>("max_iter", max_iter_, 2);
 
-    ROS_WARN("Flight Height = %.2f m", height);
+    uosm::flight_pattern::PatternParameters flight_params;
+    nh.param<float>("dt", flight_params.dt, 0.05f);
+    nh.param<float>("radius", flight_params.radius, 0.80f);
+    nh.param<float>("height", flight_params.height, 1.00f);
+    nh.param<float>("speed", flight_params.speed, 0.30f);
+    nh.param<float>("min_speed", flight_params.min_speed, 0.05f);
+    nh.param<float>("offset_x", flight_params.offset_x, 0.00f);
+    nh.param<float>("offset_y", flight_params.offset_y, 0.00f);
+    nh.param<float>("offset_z", flight_params.offset_z, 0.00f);
+    nh.param<float>("frequency", flight_params.frequency, 0.00f);
+    nh.param<int>("ngram_vertices", flight_params.ngram_vertices, 7);
+    nh.param<int>("ngram_step", flight_params.ngram_step, 2);
 
-    switch (static_cast<pattern>(flight_pattern))
+    if(std::__gcd(flight_params.ngram_vertices, flight_params.ngram_step) != 1)
     {
-    case pattern::HOVER:
-        ROS_INFO("Flight Pattern: Hover");
+        ROS_ERROR("[UoSM] ngram_vertices and ngram_step must be co-prime!");
+        return 0;
+    }
+
+    switch (flight_pattern)
+    {
+    case uosm::flight_pattern::PatternFactory::PatternType::CIRCULAR:
+        ROS_INFO("[UoSM] Flight Pattern: Circular");
         break;
-    case pattern::CIRCULAR:
-        ROS_INFO("Flight Pattern: Circular");
+    case uosm::flight_pattern::PatternFactory::PatternType::SPIRAL:
+        ROS_INFO("[UoSM] Flight Pattern: Spiral");
         break;
-    case pattern::SQUARE:
-        ROS_INFO("Flight Pattern: Square");
+    case uosm::flight_pattern::PatternFactory::PatternType::CLOUD:
+        ROS_INFO("[UoSM] Flight Pattern: Cloud");
         break;
-    case pattern::STAR:
-        ROS_INFO("Flight Pattern: Star");
+    case uosm::flight_pattern::PatternFactory::PatternType::SINE:
+        ROS_INFO("[UoSM] Flight Pattern: Sine");
+        break;
+    case uosm::flight_pattern::PatternFactory::PatternType::NGRAM:
+        ROS_INFO("[UoSM] Flight Pattern: N-Gram");
         break;
     default:
         ROS_ERROR("Flight Pattern Invalid!");
@@ -274,9 +103,9 @@ int main(int argc, char **argv)
     }
 
     geometry_msgs::PoseStamped pose;
-    pose.pose.position.x = 0;
-    pose.pose.position.y = 0;
-    pose.pose.position.z = height;
+    pose.pose.position.x = flight_params.offset_x;
+    pose.pose.position.y = flight_params.offset_y;
+    pose.pose.position.z = flight_params.height;
     pose.pose.orientation = tf2::toMsg(tf2::Quaternion(0, 0, 0, 1)); // No rotation (yaw = 0)
 
     // send a few setpoints before starting
@@ -295,110 +124,59 @@ int main(int argc, char **argv)
 
     bool isCompleted = false;
     bool isReady = false;
+    float wait_period_sec = 2.0f;
     ros::Time last_request = ros::Time::now();
-    auto cir_traj = circular_traj{0.05, 0.0, 1.0, 0.3};
-    auto squ_traj = square_traj{0.05, 2.0, 1.0, 0.3, 0, 0.0};
-    auto sta_traj = star_traj{0.05, 1.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0};
+    auto pattern = uosm::flight_pattern::PatternFactory::createPattern(flight_pattern, flight_params);
+
     while (ros::ok())
     {
-        if (current_state.mode != "OFFBOARD" &&
-            (ros::Time::now() - last_request > ros::Duration(3.0)))
+        if (current_state.mode != FLIGHT_MODE_OFFBOARD &&
+            (ros::Time::now() - last_request > ros::Duration(wait_period_sec)))
         {
             if (set_mode_client.call(offb_set_mode) &&
                 offb_set_mode.response.mode_sent)
             {
-                ROS_INFO("Offboard enabled");
+                ROS_INFO("[UoSM] OFFBOARD mode set!");
             }
             last_request = ros::Time::now();
         }
         else
         {
             if (!current_state.armed &&
-                (ros::Time::now() - last_request > ros::Duration(3.0)))
+                (ros::Time::now() - last_request > ros::Duration(wait_period_sec)))
             {
                 if (arming_client.call(arm_cmd) &&
                     arm_cmd.response.success)
                 {
-                    ROS_INFO("Vehicle armed");
+                    ROS_INFO("Vehicle ARMED!");
                 }
                 last_request = ros::Time::now();
             }
         }
 
         // fly predefined pattern
-        if (current_state.mode == "OFFBOARD" && current_state.armed && !isCompleted)
+        if (current_state.mode == FLIGHT_MODE_OFFBOARD && current_state.armed && !isCompleted)
         {
-            switch (static_cast<pattern>(flight_pattern))
+            if (!isReady)
             {
-            case pattern::HOVER:
-                // hover for 30 sec
-                hover_pattern(pose);
-                if ((ros::Time::now() - last_request > ros::Duration(30.0)))
-                    isCompleted = true;
-                break;
-            case pattern::CIRCULAR:
-                if (!isReady)
-                {
-                    hover_pattern(pose);
-                    last_request = ros::Time::now();
-                    isReady = true;
-                }
-                // hover first for 10 sec
-                if (isReady && (ros::Time::now() - last_request > ros::Duration(10.0)))
-                {
-                    ROS_INFO("Traj theta = %.2f", cir_traj.theta_);
-                    if (cir_traj.theta_ > (2 * REVOLUTION))
-                        isCompleted = true;
-                    else
-                        circular_pattern(pose, cir_traj);
-                }
-                break;
-            case pattern::SQUARE:
-                if (!isReady)
-                {
-                    hover_pattern(pose);
-                    last_request = ros::Time::now();
-                    isReady = true;
-                }
-                // hover first for 10 sec
-                if (isReady && (ros::Time::now() - last_request > ros::Duration(10.0)))
-                {
-                    ROS_INFO("Traj segment = %d", squ_traj.segment_);
-                    if (squ_traj.segment_ > 8)
-                        isCompleted = true;
-                    else
-                        square_pattern(pose, squ_traj);
-                }
-                break;
-            case pattern::STAR:
-                if (!isReady)
-                {
-                    hover_pattern(pose);
-                    last_request = ros::Time::now();
-                    isReady = true;
-                }
-                // hover first for 10 sec
-                if (isReady && (ros::Time::now() - last_request > ros::Duration(10.0)))
-                {
-                   ROS_INFO("Traj segment = %d", sta_traj.segment_);
-                    if (sta_traj.segment_ > 9)
-                        isCompleted = true;
-                    else
-                        star_pattern(pose, sta_traj);
-                }
-                break;
-            default:
-                isCompleted = true;
-                break;
+                pattern->hover(pose);
+                last_request = node->now();
+                isReady = true;
+            }
+            // hover first for 5 sec
+            if (isReady && (node->now() - last_request) > ros::Duration(5.0))
+            {
+                pattern->run(pose);
+                isCompleted = pattern->is_done(max_iter);
             }
         }
 
         // return to origin if still mid air
-        if (current_state.armed && isCompleted && current_odom.pose.pose.position.z > 0.1)
+        // @todo: use px4 automated return to home and land mode
+        if (current_state.armed && isCompleted && current_odom.pose.pose.position.z >= 0.1)
         {
-            return_origin(pose);
-            ROS_INFO("Returning to Origin!");
-            ROS_WARN("Altitude = %.2f m", current_odom.pose.pose.position.z);
+            pattern->return_origin(pose);
+            ROS_WARN("[UoSM] Returning to Origin! Altitude = %.2f m", current_odom.pose.pose.position.z);
         }
         else if (current_state.armed && isCompleted && current_odom.pose.pose.position.z <= 0.1)
         {
@@ -406,7 +184,7 @@ int main(int argc, char **argv)
             if (arming_client.call(arm_cmd) &&
                 arm_cmd.response.success)
             {
-                ROS_INFO("Vehicle disarmed");
+                ROS_INFO("[UoSM] Vehicle DISARMED!");
             }
         }
 
