@@ -42,7 +42,7 @@
 	<arg name="ngram_vertices" default="7"/>
 	<arg name="ngram_step" default="2"/>
 
-    <node pkg="offboard_test" exec="offboard_test_node" name="offboard_test_node" output="screen">
+    <node pkg="offboard_test" type="offboard_test_node" name="offboard_test_node" output="screen">
     	<param name="flight_pattern" value="$(var flight_pattern)" />
 		<param name="max_iter" value="$(var max_iter)" />
 		<param name="height" value="$(var height)" />
