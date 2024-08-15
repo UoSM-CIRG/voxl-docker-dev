@@ -71,21 +71,7 @@ namespace uosm
                 quat.setRPY(0, 0, 0);
                 pose.pose.orientation = tf2::toMsg(quat);
             }
-            /**
-             * @brief Set the pose to the origin
-             *
-             * @param pose The pose of the drone
-             *
-             */
-            void return_origin(geometry_msgs::msg::PoseStamped &pose) const
-            {
-                pose.pose.position.x = 0.0f;
-                pose.pose.position.y = 0.0f;
-                pose.pose.position.z = 0.0f;
-                tf2::Quaternion quat;
-                quat.setRPY(0, 0, 0);
-                pose.pose.orientation = tf2::toMsg(quat);
-            }
+
             /**
              * @brief Increase the iteration counter by 1 every revolution
              */

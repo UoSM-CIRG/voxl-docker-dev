@@ -16,13 +16,24 @@
 #include <mavros_msgs/srv/set_mode.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <bits/stdc++.h> 
 
+#include <bits/stdc++.h> 
+#include <cmath>
 #include "FlightPattern.hpp"
 
 
 constexpr float PUBLISH_RATE(20.0);                 // pose publishing rate
+constexpr float THRESHOLD_ORIGIN(0.1);              // threshold for origin
 const std::string FLIGHT_MODE_OFFBOARD("OFFBOARD"); // offboard mode
+const std::string FLIGHT_MODE_LAND("AUTO.LAND");    // land mode
+
+// math utility
+double calc2DVectorDistance(const nav_msgs::Odometry& odom) {
+    return std::sqrt(
+        std::pow(odom.pose.pose.position.x, 2) +
+        std::pow(odom.pose.pose.position.y, 2)
+    );
+}
 
 // global
 mavros_msgs::msg::State current_state;
@@ -153,6 +164,9 @@ int main(int argc, char *argv[])
     auto offb_set_mode = mavros_msgs::srv::SetMode::Request();
     offb_set_mode.custom_mode = FLIGHT_MODE_OFFBOARD;
 
+    auto land_set_mode = mavros_msgs::srv::SetMode::Request();
+    land_set_mode.custom_mode = FLIGHT_MODE_LAND;
+
     auto arm_cmd = mavros_msgs::srv::CommandBool::Request();
     arm_cmd.value = true;
 
@@ -165,7 +179,7 @@ int main(int argc, char *argv[])
     while (rclcpp::ok())
     {
         // Set offboard mode
-        if (current_state.mode != FLIGHT_MODE_OFFBOARD &&
+        if (current_state.mode != FLIGHT_MODE_OFFBOARD && current_state.mode != FLIGHT_MODE_LAND &&
             (node->now() - last_request) > rclcpp::Duration(wait_period_sec, 0))
         {
             if (set_mode_client->wait_for_service(std::chrono::seconds(wait_period_sec)))
@@ -187,7 +201,7 @@ int main(int argc, char *argv[])
         else
         {
             // Arm vehicle
-            if (!current_state.armed && (node->now() - last_request) > rclcpp::Duration(wait_period_sec, 0))
+            if (!current_state.armed && !isCompleted && (node->now() - last_request) > rclcpp::Duration(wait_period_sec, 0))
             {
                 if (arming_client->wait_for_service(std::chrono::seconds(wait_period_sec)))
                 {
@@ -228,28 +242,27 @@ int main(int argc, char *argv[])
             }
         }
 
-        // return to origin if still mid air
-        // @todo: use px4 automated return to home and land mode
-        if (current_state.armed && isCompleted && current_odom.pose.pose.position.z >= 0.1)
+        // return to origin XYZ defined in params and hover, then
+        // use px4 automated land mode
+        if (current_state.armed && isCompleted && current_state.mode == FLIGHT_MODE_OFFBOARD && current_odom.pose.pose.position.z >= 0.1 && calc2DVectorDistance(current_odom) >= THRESHOLD_ORIGIN)
         {
-            pattern->return_origin(pose);
-            RCLCPP_WARN(node->get_logger(), "[UoSM] Returning to Origin! Altitude = %.2f m", current_odom.pose.pose.position.z);
+            pattern->hover(pose);
+            RCLCPP_WARN(node->get_logger(), "[UoSM] Returning to hover at origin! x = %.2f m, y = %.2f m, z = %.2f m", current_odom.pose.pose.position.x, current_odom.pose.pose.position.y, current_odom.pose.pose.position.z);
         }
-        else if (current_state.armed && isCompleted && current_odom.pose.pose.position.z < 0.1)
+        else if (current_state.armed && isCompleted && current_state.mode == FLIGHT_MODE_OFFBOARD && current_state.mode != FLIGHT_MODE_LAND && calc2DVectorDistance(current_odom) < THRESHOLD_ORIGIN)
         {
-            arm_cmd.value = false;
-            if (arming_client->wait_for_service(std::chrono::seconds(wait_period_sec)))
+            if (set_mode_client->wait_for_service(std::chrono::seconds(wait_period_sec)))
             {
-                arming_client->async_send_request(
-                    std::make_shared<mavros_msgs::srv::CommandBool::Request>(arm_cmd),
-                    [node](rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedFuture response_future)
+                set_mode_client->async_send_request(
+                    std::make_shared<mavros_msgs::srv::SetMode::Request>(land_set_mode),
+                    [node](rclcpp::Client<mavros_msgs::srv::SetMode>::SharedFuture response_future)
                     {
                         // Callback function
                         auto result = response_future.get();
                         if (result)
-                            RCLCPP_INFO(node->get_logger(), "[UoSM] Vehicle DISARMED!");
+                            RCLCPP_INFO(node->get_logger(), "[UoSM] LAND mode set!");
                         else
-                            RCLCPP_ERROR(node->get_logger(), "[UoSM] FAILED to DISARM vehicle!");
+                            RCLCPP_INFO(node->get_logger(), "[UoSM] FAILED to set LAND mode!");
                     });
             }
         }
