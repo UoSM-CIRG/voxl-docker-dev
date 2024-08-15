@@ -14,14 +14,25 @@
 #include <mavros_msgs/State.h>
 
 #include <bits/stdc++.h> 
+#include <cmath>
 #include "FlightPattern.hpp"
 
 constexpr float PUBLISH_RATE(20.0);                 // pose publishing rate
+constexpr float THRESHOLD_ORIGIN(0.1);              // threshold for origin
 const std::string FLIGHT_MODE_OFFBOARD("OFFBOARD"); // offboard mode
+const std::string FLIGHT_MODE_LAND("AUTO.LAND");    // land mode
 
 //global
 mavros_msgs::State current_state;
 nav_msgs::Odometry current_odom;
+
+// math utility
+double calc2DVectorDistance(const nav_msgs::Odometry& odom) {
+    return std::sqrt(
+        std::pow(odom.pose.pose.position.x, 2) +
+        std::pow(odom.pose.pose.position.y, 2)
+    );
+}
 
 // Callback function for handling changes in the state of the vehicle
 void state_cb(const mavros_msgs::State::ConstPtr msg)
@@ -134,7 +145,10 @@ int main(int argc, char **argv)
     }
 
     mavros_msgs::SetMode offb_set_mode;
-    offb_set_mode.request.custom_mode = "OFFBOARD";
+    offb_set_mode.request.custom_mode = FLIGHT_MODE_OFFBOARD;
+
+    mavros_msgs::SetMode land_set_mode;
+    land_set_mode.request.custom_mode = FLIGHT_MODE_LAND;
 
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = true;
@@ -147,7 +161,7 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-        if (current_state.mode != FLIGHT_MODE_OFFBOARD &&
+        if (current_state.mode != FLIGHT_MODE_OFFBOARD && current_state.mode != FLIGHT_MODE_LAND &&
             (ros::Time::now() - last_request > ros::Duration(wait_period_sec)))
         {
             if (set_mode_client.call(offb_set_mode) &&
@@ -159,7 +173,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            if (!current_state.armed &&
+            if (!current_state.armed && !isCompleted &&
                 (ros::Time::now() - last_request > ros::Duration(wait_period_sec)))
             {
                 if (arming_client.call(arm_cmd) &&
@@ -188,21 +202,25 @@ int main(int argc, char **argv)
             }
         }
 
-        // return to origin if still mid air
-        // @todo: use px4 automated return to home and land mode
-        if (current_state.armed && isCompleted && current_odom.pose.pose.position.z >= 0.1)
+        // return to origin XYZ defined in params and hover, then
+        // use px4 automated land mode
+        if (current_state.armed && isCompleted && current_state.mode == FLIGHT_MODE_OFFBOARD && current_odom.pose.pose.position.z >= 0.1 && calc2DVectorDistance(current_odom) >= THRESHOLD_ORIGIN)
         {
-            pattern->return_origin(pose);
-            ROS_WARN("[UoSM] Returning to Origin! Altitude = %.2f m", current_odom.pose.pose.position.z);
+            pattern->hover(pose);
+            ROS_WARN("[UoSM] Returning to hover at origin! x = %.2f m, y = %.2f m, z = %.2f m", current_odom.pose.pose.position.x, current_odom.pose.pose.position.y, current_odom.pose.pose.position.z);
         }
-        else if (current_state.armed && isCompleted && current_odom.pose.pose.position.z <= 0.1)
+        else if (current_state.armed && isCompleted && current_state.mode == FLIGHT_MODE_OFFBOARD && current_state.mode != FLIGHT_MODE_LAND && calc2DVectorDistance(current_odom) < THRESHOLD_ORIGIN)
         {
-            arm_cmd.request.value = false;
-            if (arming_client.call(arm_cmd) &&
-                arm_cmd.response.success)
+            if (set_mode_client.call(land_set_mode) &&
+                land_set_mode.response.mode_sent)
             {
-                ROS_INFO("[UoSM] Vehicle DISARMED!");
+                ROS_INFO("[UoSM] LAND mode set!");
             }
+        }
+        else if (!current_state.armed && isCompleted)
+        {
+             ROS_INFO("[UoSM] Complete!");
+             return 0;
         }
 
         local_pos_pub.publish(pose);
