@@ -126,20 +126,25 @@ namespace uosm
         class SpiralPattern : public Pattern
         {
         private:
-            double scaled_theta_ = 0.0f;
+            double min_height_ = initial_height_ / 2.0;
+            double min_radius_ = 0.1 * initial_radius_; // Adjust this value as needed
 
         public:
             SpiralPattern(const PatternParameters &params)
             {
                 params_ = params;
+                min_height_ = params_.height / 2.0;
+                min_radius_ = params_.radius * 0.1;
             }
 
             void run(geometry_msgs::PoseStamped &pose) override
             {
-                double inner_radius = (scaled_theta_ / (params_.max_iter * TWO_PI)) * (params_.radius);
-                pose.pose.position.x = inner_radius * cos(theta_) + params_.offset_x;
-                pose.pose.position.y = inner_radius * sin(theta_) + params_.offset_y;
-                pose.pose.position.z = params_.height + params_.offset_z * sin(params_.frequency * theta_);
+                double completion_rate = ((static_cast<double>(iteration_) + theta_ / TWO_PI) / params_.iterations);
+                double current_radius = params_.radius - (params_.radius - min_radius_) * completion_rate;
+                double current_height = params_.height - (params_.height - min_height_) * completion_rate;
+                pose.pose.position.x = current_radius * cos(theta_) + params_.offset_x;
+                pose.pose.position.y = current_radius * sin(theta_) + params_.offset_y;
+                pose.pose.position.z = current_height;
 
                 double angle_towards_middle = atan2(params_.offset_y - pose.pose.position.y, params_.offset_x - pose.pose.position.x);
                 tf2::Quaternion quat;
@@ -147,7 +152,6 @@ namespace uosm
                 pose.pose.orientation = tf2::toMsg(quat);
 
                 theta_ += params_.speed * params_.dt; // angular velocity
-                scaled_theta_ += params_.speed * params_.dt;
                 increase_iteration();
             }
         }; /* class SpiralPattern */
