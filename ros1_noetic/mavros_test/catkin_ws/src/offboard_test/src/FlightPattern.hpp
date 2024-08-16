@@ -126,8 +126,8 @@ namespace uosm
         class SpiralPattern : public Pattern
         {
         private:
-            double min_height_ = initial_height_ / 2.0;
-            double min_radius_ = 0.1 * initial_radius_; // Adjust this value as needed
+            double min_height_ = 0.0f;
+            double min_radius_ = 0.0f;
 
         public:
             SpiralPattern(const PatternParameters &params)
