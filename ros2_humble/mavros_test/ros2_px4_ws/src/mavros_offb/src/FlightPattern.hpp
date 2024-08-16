@@ -127,6 +127,8 @@ namespace uosm
         {
         private:
             double scaled_theta_ = 0.0f;
+            double min_height_ = 0.0f;
+            double min_radius_ = 0.0f;
         public:
             SpiralPattern(const PatternParameters &params)
             {
