@@ -13,7 +13,7 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 
-#include <bits/stdc++.h> 
+#include <bits/stdc++.h>
 #include <cmath>
 #include "FlightPattern.hpp"
 
@@ -22,16 +22,16 @@ constexpr float THRESHOLD_ORIGIN(0.1);              // threshold for origin
 const std::string FLIGHT_MODE_OFFBOARD("OFFBOARD"); // offboard mode
 const std::string FLIGHT_MODE_LAND("AUTO.LAND");    // land mode
 
-//global
+// global
 mavros_msgs::State current_state;
 nav_msgs::Odometry current_odom;
 
 // math utility
-double calc2DVectorDistance(const nav_msgs::Odometry& odom) {
+double calc2DVectorDistance(const nav_msgs::Odometry &odom)
+{
     return std::sqrt(
         std::pow(odom.pose.pose.position.x, 2) +
-        std::pow(odom.pose.pose.position.y, 2)
-    );
+        std::pow(odom.pose.pose.position.y, 2));
 }
 
 // Callback function for handling changes in the state of the vehicle
@@ -82,11 +82,9 @@ int main(int argc, char **argv)
     nh.param<int>("ngram_step", ngram_step, 2);
 
     const uosm::flight_pattern::PatternParameters flight_params{
-        dt, radius, height, speed, min_speed, offset_x, offset_y, offset_z, frequency, ngram_vertices, ngram_step
-    };
- 
+        dt, radius, height, speed, min_speed, offset_x, offset_y, offset_z, frequency, ngram_vertices, ngram_step, max_iter_};
 
-    if(std::__gcd(flight_params.ngram_vertices, flight_params.ngram_step) != 1)
+    if (std::__gcd(flight_params.ngram_vertices, flight_params.ngram_step) != 1)
     {
         ROS_ERROR("[UoSM] ngram_vertices and ngram_step must be co-prime!");
         return 0;
@@ -219,8 +217,8 @@ int main(int argc, char **argv)
         }
         else if (!current_state.armed && isCompleted)
         {
-             ROS_INFO("[UoSM] Complete!");
-             return 0;
+            ROS_INFO("[UoSM] Complete!");
+            return 0;
         }
 
         local_pos_pub.publish(pose);

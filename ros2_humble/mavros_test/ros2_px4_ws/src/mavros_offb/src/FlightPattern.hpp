@@ -14,6 +14,7 @@ namespace uosm
 {
     namespace flight_pattern
     {
+        constexpr double TWO_PI = 2.0 * M_PI;
         struct PatternParameters
         {
             double dt = 0.0f;
@@ -27,7 +28,8 @@ namespace uosm
             double frequency = 0.0f;
             int ngram_vertices = 7;
             int ngram_step = 2;
-        }params_;
+            int max_iter = 2;
+        };
 
         /**
          * @brief Abstract class for flight patterns
@@ -77,8 +79,7 @@ namespace uosm
              */
             void increase_iteration()
             {
-                constexpr double single_revolution = 2 * M_PI;
-                if (theta_ >= single_revolution)
+                if (theta_ >= TWO_PI)
                 {
                     theta_ = 0.0;
                     ++iteration_;
@@ -124,6 +125,8 @@ namespace uosm
 
         class SpiralPattern : public Pattern
         {
+        private:
+            double scaled_theta_ = 0.0f;
         public:
             SpiralPattern(const PatternParameters &params)
             {
@@ -132,8 +135,9 @@ namespace uosm
 
             void run(geometry_msgs::msg::PoseStamped &pose) override
             {
-                pose.pose.position.x = params_.radius * cos(theta_) + params_.offset_x;
-                pose.pose.position.y = params_.radius * sin(theta_) + params_.offset_y;
+                double inner_radius = (scaled_theta_ / (params_.max_iter * TWO_PI)) * (params_.radius);
+                pose.pose.position.x = inner_radius * cos(theta_) + params_.offset_x;
+                pose.pose.position.y = inner_radius * sin(theta_) + params_.offset_y;
                 pose.pose.position.z = params_.height + params_.offset_z * sin(params_.frequency * theta_);
 
                 double angle_towards_middle = atan2(params_.offset_y - pose.pose.position.y, params_.offset_x - pose.pose.position.x);
@@ -142,6 +146,7 @@ namespace uosm
                 pose.pose.orientation = tf2::toMsg(quat);
 
                 theta_ += params_.speed * params_.dt; // angular velocity
+                scaled_theta_ += params_.speed * params_.dt;
                 increase_iteration();
             }
         }; /* class SpiralPattern */
@@ -188,41 +193,38 @@ namespace uosm
         class SinePattern : public Pattern
         {
         private:
-            double time_ = 0;             // Accumulated time for sine wave calculation
-            int period_counter_ = 0;      // Counter for completed sine wave periods
-            double progress_ = 0;         // Progress within a single sine wave period
+            double time_ = 0;        // Accumulated time for sine wave calculation
+            int period_counter_ = 0; // Counter for completed sine wave periods
+            double progress_ = 0;    // Progress within a single sine wave period
             bool first_it_ = true;
-            bool forward_ = true;            // Direction of motion
+            bool forward_ = true; // Direction of motion
             double period_length_;
 
         public:
             SinePattern(const PatternParameters &params)
             {
                 params_ = params;
-                period_length_ = 2.0 * M_PI/params_.frequency; 
+                period_length_ = TWO_PI / params_.frequency;
             }
 
-            void run(geometry_msgs::msg::PoseStamped &pose) 
+            void run(geometry_msgs::msg::PoseStamped &pose)
             {
                 // Calculate the progress step for each update
                 double progress_step = params_.speed * params_.dt;
-                if(first_it_)
+                if (first_it_)
                 {
                     pose.pose.position.x = params_.offset_x;
                     first_it_ = false;
                 }
                 // Update the x position based on the direction
-                if (forward_) {
+                if (forward_)
                     pose.pose.position.x += progress_step;
-                } else {
+                else
                     pose.pose.position.x -= progress_step;
-                }
-
-                //std::cout << "position.x: " << pose.pose.position.x << std::endl;
 
                 // Calculate the z position using the sine wave
                 pose.pose.position.y = params_.offset_y; // y is constant
-                pose.pose.position.z = params_.height + params_.offset_z* sin(params_.frequency * time_);
+                pose.pose.position.z = params_.height + params_.offset_z * sin(params_.frequency * time_);
 
                 // Orientation: Maintain a fixed orientation
                 tf2::Quaternion quat;
@@ -234,21 +236,23 @@ namespace uosm
                 progress_ += params_.dt; // Update progress based on speed
 
                 // Check if one period has been completed
-                if (progress_ >= period_length_) {
+                if (progress_ >= period_length_)
+                {
                     period_counter_++; // Increment period counter
                     progress_ = 0.0;   // Reset progress for the next period
-                    
-                    //std::cout << "Periods completed: " << period_counter_ << std::endl;
+
+                    // std::cout << "Periods completed: " << period_counter_ << std::endl;
                 }
 
                 // Check if two periods have been completed for direction reversal
-                if (period_counter_ == 2) {
-                    if(!forward_)
-                        theta_ = 2 * M_PI;
+                if (period_counter_ == 2)
+                {
+                    if (!forward_)
+                        theta_ = TWO_PI;
 
                     forward_ = !forward_; // Reverse direction after completing two periods
                     period_counter_ = 0;  // Reset period counter
-                    //std::cout << "Direction reversed" << std::endl;
+                    // std::cout << "Direction reversed" << std::endl;
                 }
                 increase_iteration();
             }
@@ -273,20 +277,21 @@ namespace uosm
                 std::vector<Point> vertices;
                 for (int i = 0; i < n; ++i)
                 {
-                    double angle = 2 * M_PI * i / n;
+                    double angle = TWO_PI * i / n;
                     double x = radius * cos(angle) + offset_x;
                     double y = radius * sin(angle) + offset_y;
                     vertices.push_back({x, y});
                 }
                 return vertices;
             }
-    
+
             std::vector<int> generate_order(int n, int k)
             {
                 std::vector<int> order;
                 int current_vertex = 0;
                 std::vector<bool> visited(n, false);
-                while (!visited[current_vertex]) {
+                while (!visited[current_vertex])
+                {
                     order.push_back(current_vertex);
                     visited[current_vertex] = true;
                     current_vertex = (current_vertex + k) % n;
@@ -351,12 +356,11 @@ namespace uosm
                     progress_ = 0.0;
                     if (segment_ >= 0)
                     {
-                        theta_ += 2*M_PI / (params_.ngram_vertices);
+                        theta_ += TWO_PI / (params_.ngram_vertices);
                         increase_iteration();
                     }
                     segment_++;
                 }
-
             }
         }; /* class NGramPattern */
 

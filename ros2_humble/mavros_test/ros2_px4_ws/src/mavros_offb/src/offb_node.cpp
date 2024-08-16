@@ -17,10 +17,9 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 
-#include <bits/stdc++.h> 
+#include <bits/stdc++.h>
 #include <cmath>
 #include "FlightPattern.hpp"
-
 
 constexpr float PUBLISH_RATE(20.0);                 // pose publishing rate
 constexpr float THRESHOLD_ORIGIN(0.1);              // threshold for origin
@@ -28,11 +27,11 @@ const std::string FLIGHT_MODE_OFFBOARD("OFFBOARD"); // offboard mode
 const std::string FLIGHT_MODE_LAND("AUTO.LAND");    // land mode
 
 // math utility
-double calc2DVectorDistance(const nav_msgs::Odometry& odom) {
+double calc2DVectorDistance(const nav_msgs::Odometry &odom)
+{
     return std::sqrt(
         std::pow(odom.pose.pose.position.x, 2) +
-        std::pow(odom.pose.pose.position.y, 2)
-    );
+        std::pow(odom.pose.pose.position.y, 2));
 }
 
 // global
@@ -87,9 +86,10 @@ int main(int argc, char *argv[])
         node->get_parameter("offset_z").as_double(),
         node->get_parameter("frequency").as_double(),
         node->get_parameter("ngram_vertices").as_int(),
-        node->get_parameter("ngram_step").as_int()};
+        node->get_parameter("ngram_step").as_int(),
+        node->get_parameter("max_iter").as_int()};
 
-    if(std::__gcd(flight_params.ngram_vertices, flight_params.ngram_step) != 1)
+    if (std::__gcd(flight_params.ngram_vertices, flight_params.ngram_step) != 1)
     {
         RCLCPP_ERROR(node->get_logger(), "[UoSM] ngram_vertices and ngram_step must be co-prime!");
         return 0;
