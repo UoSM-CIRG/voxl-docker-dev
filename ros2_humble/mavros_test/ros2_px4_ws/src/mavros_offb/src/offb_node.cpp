@@ -27,7 +27,7 @@ const std::string FLIGHT_MODE_OFFBOARD("OFFBOARD"); // offboard mode
 const std::string FLIGHT_MODE_LAND("AUTO.LAND");    // land mode
 
 // math utility
-double calc2DVectorDistance(const nav_msgs::Odometry &odom)
+double calc2DVectorDistance(const nav_msgs::msg::Odometry &odom)
 {
     return std::sqrt(
         std::pow(odom.pose.pose.position.x, 2) +
